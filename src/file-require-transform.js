@@ -5,7 +5,7 @@ const b = recast.types.builders
 const t = require('babel-types')
 const resolveModulePath = require('./resolve-module-path');
 
-const GLOBALS = new Set(['global', 'window', 'process', 'document', 'console'])
+const GLOBALS = new Set(['global', 'window', 'process', 'document', 'console', '__dirname', '__filename'])
 const NODE_CORE_MODULES = new Set([
   'assert', 'buffer', 'child_process', 'cluster', 'constants', 'crypto',
   'dgram', 'dns', 'domain', 'events', 'fs', 'http', 'https', 'module', 'net',

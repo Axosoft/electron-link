@@ -49,6 +49,8 @@ function generateSnapshot () {
     return global
   }
 
+  let appRoot = '.';
+
   // Globally visible function and constructor names that are available in an Electron renderer window, but not visible
   // during snapshot creation.
   // See test/samples/list-globals.js for the generation code.
@@ -257,6 +259,15 @@ function generateSnapshot () {
       module = {exports: {}}
       const isNodeModule = !modulePath.startsWith('.')
       const dirname = `${isNodeModule ? 'node_modules/' : ''}${modulePath.split('/').slice(0, -1).join('/')}`
+      const filename = `${isNodeModule ? 'node_modules/' : ''}${modulePath}`
+
+      function getDirname() {
+        return customRequire('path').posix.join(appRoot, dirname)
+      }
+
+      function getFilename() {
+        return customRequire('path').posix.join(appRoot, filename)
+      }
 
       function define (callback) {
         callback(customRequire, module.exports, module)
@@ -264,7 +275,7 @@ function generateSnapshot () {
 
       if (customRequire.definitions.hasOwnProperty(modulePath)) {
         customRequire.cache[modulePath] = module
-        customRequire.definitions[modulePath].apply(module.exports, [module.exports, module, modulePath, dirname, customRequire, define])
+        customRequire.definitions[modulePath].apply(module.exports, [module.exports, module, getFilename, getDirname, customRequire, define])
       } else {
         module.exports = require(modulePath)
         customRequire.cache[modulePath] = module
@@ -282,7 +293,7 @@ function generateSnapshot () {
   customRequire(mainModuleRequirePath)
   return {
     customRequire,
-    setGlobals: function (newGlobal, newProcess, newWindow, newDocument, newConsole, nodeRequire) {
+    setGlobals: function (newGlobal, newProcess, newWindow, newDocument, newConsole, nodeRequire, newAppRoot = '.') {
       // Populate the global function trampoline with the real global functions defined on newGlobal.
       globalFunctionTrampoline = newGlobal;
 
@@ -310,6 +321,8 @@ function generateSnapshot () {
         newConsole[key] = console[key]
       }
       console = newConsole
+
+      appRoot = newAppRoot;
 
       require = nodeRequire
     },

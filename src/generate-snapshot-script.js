@@ -91,7 +91,7 @@ module.exports = async function (cache, options) {
         await cache.put({filePath, original: originalSource, transformed: transformedSource, requires: foundRequires})
       }
 
-      moduleASTs[relativeFilePath] = `function (exports, module, __filename, __dirname, require, define) {\n${transformedSource}\n}`
+      moduleASTs[relativeFilePath] = `function (exports, module, get___filename, get___dirname, require, define) {\n${transformedSource}\n}`
 
       for (let i = 0; i < foundRequires.length; i++) {
         const {resolvedPath} = foundRequires[i]
