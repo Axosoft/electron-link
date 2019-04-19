@@ -262,11 +262,11 @@ function generateSnapshot () {
       const filename = `${isNodeModule ? 'node_modules/' : ''}${modulePath}`
 
       function getDirname() {
-        return customRequire('path').posix.join(appRoot, dirname)
+        return customRequire('path').join(appRoot, dirname)
       }
 
       function getFilename() {
-        return customRequire('path').posix.join(appRoot, filename)
+        return customRequire('path').join(appRoot, filename)
       }
 
       function define (callback) {
