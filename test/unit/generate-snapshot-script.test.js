@@ -37,7 +37,7 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
       eval(snapshotScript)
       snapshotResult.setGlobals(global, process, {}, {}, console, require)
       assert(!global.moduleInitialized)
-      assert.equal(global.initialize(), 'abx/ybAd')
+      assert.equal(global.initialize(), `ab${path.join('x', 'y')}bAd`)
       assert(global.moduleInitialized)
 
       assert.deepEqual(Array.from(includedFilePaths), [
@@ -85,7 +85,7 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
       })
       eval(snapshotScript)
       snapshotResult.setGlobals(global, process, {}, {}, console, require)
-      assert.equal(global.initialize(), 'abx/ybAd')
+      assert.equal(global.initialize(), `ab${path.join('x', 'y')}bAd`)
 
       assert.deepEqual(Array.from(includedFilePaths), [
         path.resolve(baseDirPath, '../fixtures/module-1/index.js'),
@@ -138,6 +138,12 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
         } else {
           const absoluteFilePath = Module._resolveFilename(module, this, false)
           const relativeFilePath = path.relative(mainPath, absoluteFilePath)
+            .replace(
+              '\\',
+              process.platform === 'win32'
+                ? '/'
+                : '\\'
+              )
           let cachedModule = snapshotResult.customRequire.cache[relativeFilePath]
           if (cachedModule) {
             cachedRequires.push(relativeFilePath)
@@ -229,7 +235,7 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
     eval(snapshotScript)
     snapshotResult.setGlobals(global, process, {}, {}, console, require)
     assert(!global.moduleInitialized)
-    assert.equal(global.initialize(), 'a(transpiled yo)x/y(transpiled yo)Ad')
+    assert.equal(global.initialize(), `a(transpiled yo)${path.join('x', 'y')}(transpiled yo)Ad`)
     assert(global.moduleInitialized)
 
     assert.deepEqual(Array.from(includedFilePaths), [

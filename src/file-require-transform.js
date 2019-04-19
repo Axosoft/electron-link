@@ -32,7 +32,7 @@ module.exports = class FileRequireTransform {
     this.replaceDeferredRequiresWithLazyFunctions()
     this.replaceReferencesToDeferredRequiresWithFunctionCalls()
     this.replaceReferencesToGlobalsWithFunctionCalls()
-    return recast.print(this.ast).code
+    return recast.print(this.ast, { lineTerminator: '\n' }).code
   }
 
   replaceDeferredRequiresWithLazyFunctions () {
