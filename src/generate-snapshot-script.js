@@ -4,7 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const FileRequireTransform = require('./file-require-transform')
 const {SourceMapGenerator} = require('source-map')
-const resolveModulePath = require('./resolve-module-path');
+const resolveModulePath = require('./resolve-module-path')
 
 module.exports = async function (cache, options) {
   // Phase 1: Starting at the main module, traverse all requires, transforming
@@ -16,7 +16,7 @@ module.exports = async function (cache, options) {
   const includedFilePaths = new Set(requiredModulePaths)
 
   if (!options.transpile) {
-    options.transpile = () => undefined
+    options.transpile = () => ({ code: null, map: null })
   }
 
   while (requiredModulePaths.length > 0) {
@@ -50,16 +50,20 @@ module.exports = async function (cache, options) {
           : false
 
       let source
+      let map = null
       if(useCachedTransform) {
         source = cachedTransform.source
       } else {
-        source = await options.transpile({requiredModulePath: filePath}) || originalSource
+        const transpiled = await options.transpile({requiredModulePath: filePath})
+        source = transpiled.code || originalSource
+        map = transpiled.map
       }
 
       let foundRequires = []
       const transform = new FileRequireTransform({
         filePath,
         source,
+        map,
         extensions: options.extensions,
         baseDirPath: options.baseDirPath,
         didFindRequire: (unresolvedPath, resolvedPath, relativeModulePath) => {
@@ -72,13 +76,23 @@ module.exports = async function (cache, options) {
         }
       })
 
-      let transformedSource, requires
+      let transformedSource, requires, transformedMap
       if (useCachedTransform) {
         transformedSource = cachedTransform.source
         foundRequires = cachedTransform.requires
+        transformedMap = cachedTransform.map
       } else {
         try {
-          transformedSource = transform.apply()
+          const transformation = transform.apply()
+          const code = transformation.code
+          transformedMap = transformation.map
+          let inlineMapURLSuffix = ''
+          if (transformedMap) {
+            const base64Map = Buffer.from(JSON.stringify(transformedMap), 'utf8').toString('base64')
+            inlineMapURLSuffix = `\n//@ sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`
+          }
+
+          transformedSource = `${code}${inlineMapURLSuffix}`
         } catch (e) {
           console.error(`Unable to transform source code for module ${filePath}.`)
           if (e.index) {
@@ -88,7 +102,7 @@ module.exports = async function (cache, options) {
           }
           throw e
         }
-        await cache.put({filePath, original: originalSource, transformed: transformedSource, requires: foundRequires})
+        await cache.put({filePath, original: originalSource, transformed: transformedSource, requires: foundRequires, map: transformedMap})
       }
 
       moduleASTs[relativeFilePath] = `function (exports, module, get___filename, get___dirname, require, define) {\n${transformedSource}\n}`
@@ -145,7 +159,7 @@ module.exports = async function (cache, options) {
     const source = moduleASTs[relativePath]
     const lineCount = getLineCount(source)
     sections.push({relativePath, startRow: sectionStartRow, endRow: (sectionStartRow + lineCount) - 2})
-    definitions += `${JSON.stringify(relativePath)}: ${source},\n`
+    definitions += `${JSON.stringify(relativePath)}: ${JSON.stringify(source)},\n`
     sectionStartRow += lineCount
   }
 

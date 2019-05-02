@@ -26,13 +26,18 @@ module.exports = class FileRequireTransform {
       source = "module.exports = " + source.replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
     }
     this.ast = recast.parse(source, {
-      parser: require("recast/parsers/babel")
+      parser: require("recast/parsers/babel"),
+      sourceFileName: this.options.filePath
     })
     this.lazyRequireFunctionsByVariableName = new Map()
     this.replaceDeferredRequiresWithLazyFunctions()
     this.replaceReferencesToDeferredRequiresWithFunctionCalls()
     this.replaceReferencesToGlobalsWithFunctionCalls()
-    return recast.print(this.ast, { lineTerminator: '\n' }).code
+    const { code, map: transformedMap } = recast.print(this.ast, {
+      lineTerminator: '\n',
+      sourceMapName: `${this.options.filePath}.map`
+    })
+    return { code, map: transformedMap }
   }
 
   replaceDeferredRequiresWithLazyFunctions () {
