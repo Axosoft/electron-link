@@ -12,6 +12,7 @@ module.exports = async function (cache, options) {
   // collecting abstract syntax trees for use in generating the script in
   // phase 2.
   const moduleASTs = {}
+  const moduleSourceMaps = {}
   const requiredModulePaths = [options.mainPath, ...(options.entryPoints || [])]
   const includedFilePaths = new Set(requiredModulePaths)
 
@@ -84,14 +85,8 @@ module.exports = async function (cache, options) {
       } else {
         try {
           const transformation = transform.apply()
-          const code = transformation.code
+          transformedSource = transformation.code
           transformedMap = transformation.map
-          let inlineMapURLSuffix = ''
-          if (transformedMap && options.withSourceMaps) {
-            const base64Map = Buffer.from(JSON.stringify(transformedMap), 'utf8').toString('base64')
-            inlineMapURLSuffix = `\n//@ sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`
-          }
-          transformedSource = `${code}${inlineMapURLSuffix}`
         } catch (e) {
           console.error(`Unable to transform source code for module ${filePath}.`)
           if (e.index) {
@@ -104,7 +99,12 @@ module.exports = async function (cache, options) {
         await cache.put({filePath, original: originalSource, transformed: transformedSource, requires: foundRequires, map: transformedMap})
       }
 
-      moduleASTs[relativeFilePath] = `function (exports, module, get___filename, get___dirname, require, define) {\n${transformedSource}\n}`
+      const inlineMapURL = transformedMap
+        ? getSourceMappingURL(transformedMap)
+        : ''
+
+      moduleASTs[relativeFilePath] = transformedSource
+      moduleSourceMaps[relativeFilePath] = inlineMapURL
 
       for (let i = 0; i < foundRequires.length; i++) {
         const {resolvedPath} = foundRequires[i]
@@ -116,6 +116,27 @@ module.exports = async function (cache, options) {
 
   await cache.deleteUnusedEntries()
 
+  const snapshotScript = generateSnapshotScript({
+    options,
+    moduleASTs,
+    moduleSourceMaps,
+    withSourceMaps: false
+  })
+
+  let snapshotScriptWithSourceMaps = null
+  if (options.withSourceMaps) {
+    snapshotScriptWithSourceMaps = generateSnapshotScript({
+      options,
+      moduleASTs,
+      moduleSourceMaps,
+      withSourceMaps: true
+    })
+  }
+
+  return { snapshotScriptWithSourceMaps, snapshotScript, includedFilePaths }
+}
+
+function generateSnapshotScript({ options, moduleASTs, moduleSourceMaps, withSourceMaps }) {
   // Phase 2: Now use the data we gathered during phase 1 to build a snapshot
   // script based on `./blueprint.js`.
   let snapshotScript = fs.readFileSync(path.join(__dirname, 'blueprint.js'), 'utf8')
@@ -156,11 +177,17 @@ module.exports = async function (cache, options) {
   for (let i = 0; i < moduleFilePaths.length; i++) {
     const relativePath = moduleFilePaths[i]
     const source = moduleASTs[relativePath]
-    const lineCount = getLineCount(source)
+    const sourceMapSuffix = withSourceMaps && moduleSourceMaps[relativePath]
+      ? `\n${moduleSourceMaps[relativePath]}`
+      : ''
+    const resolvedSource = `${source}${sourceMapSuffix}`
+    const definition = `function (exports, module, get___filename, get___dirname, require, define) {\n${resolvedSource}\n}`
+
+    const lineCount = getLineCount(definition)
     sections.push({relativePath, startRow: sectionStartRow, endRow: (sectionStartRow + lineCount) - 2})
-    const moduleDefinition = options.withSourceMaps
-      ? JSON.stringify(source)
-      : source
+    const moduleDefinition = withSourceMaps
+      ? JSON.stringify(definition)
+      : definition
     definitions += `${JSON.stringify(relativePath)}: ${moduleDefinition},\n`
     sectionStartRow += lineCount
   }
@@ -181,7 +208,12 @@ module.exports = async function (cache, options) {
     `snapshotAuxiliaryData.snapshotSections = ${JSON.stringify(sections)}` +
     snapshotScript.slice(sectionsAssignmentEndIndex)
 
-  return {snapshotScript, includedFilePaths}
+  return snapshotScript
+}
+
+function getSourceMappingURL(sourceMap) {
+  const base64Map = Buffer.from(JSON.stringify(sourceMap), 'utf8').toString('base64')
+  return `//@ sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`
 }
 
 function getLineCount (text) {

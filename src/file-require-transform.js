@@ -20,7 +20,6 @@ module.exports = class FileRequireTransform {
 
   apply () {
     let source = this.options.source
-    let inputSourceMap = null
     if (this.options.filePath && path.extname(this.options.filePath) === '.json') {
       // Replace line separator and paragraph separator character (which aren't
       // supported inside javascript strings) with escape unicode sequences.
@@ -34,12 +33,11 @@ module.exports = class FileRequireTransform {
     this.replaceDeferredRequiresWithLazyFunctions()
     this.replaceReferencesToDeferredRequiresWithFunctionCalls()
     this.replaceReferencesToGlobalsWithFunctionCalls()
-    const { code, map: transformedMap } = recast.print(this.ast, {
+    const { code, map } = recast.print(this.ast, {
       lineTerminator: '\n',
-      sourceMapName: `${this.options.filePath}.map`,
-      inputSourceMap
+      sourceMapName: `${this.options.filePath}.map`
     })
-    return { code, map: transformedMap }
+    return { code, map }
   }
 
   replaceDeferredRequiresWithLazyFunctions () {
