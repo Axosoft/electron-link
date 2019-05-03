@@ -90,10 +90,8 @@ module.exports = async function (cache, options) {
           if (transformedMap && options.withSourceMaps) {
             const base64Map = Buffer.from(JSON.stringify(transformedMap), 'utf8').toString('base64')
             inlineMapURLSuffix = `\n//@ sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`
-            transformedSource = JSON.stringify(`${code}${inlineMapURLSuffix}`)
-          } else {
-            transformedSource = code;
           }
+          transformedSource = `${code}${inlineMapURLSuffix}`
         } catch (e) {
           console.error(`Unable to transform source code for module ${filePath}.`)
           if (e.index) {
@@ -160,7 +158,10 @@ module.exports = async function (cache, options) {
     const source = moduleASTs[relativePath]
     const lineCount = getLineCount(source)
     sections.push({relativePath, startRow: sectionStartRow, endRow: (sectionStartRow + lineCount) - 2})
-    definitions += `${JSON.stringify(relativePath)}: ${JSON.stringify(source)},\n`
+    const moduleDefinition = options.withSourceMaps
+      ? JSON.stringify(source)
+      : source
+    definitions += `${JSON.stringify(relativePath)}: ${moduleDefinition},\n`
     sectionStartRow += lineCount
   }
 
