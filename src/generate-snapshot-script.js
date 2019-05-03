@@ -87,12 +87,13 @@ module.exports = async function (cache, options) {
           const code = transformation.code
           transformedMap = transformation.map
           let inlineMapURLSuffix = ''
-          if (transformedMap) {
+          if (transformedMap && options.withSourceMaps) {
             const base64Map = Buffer.from(JSON.stringify(transformedMap), 'utf8').toString('base64')
             inlineMapURLSuffix = `\n//@ sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`
+            transformedSource = JSON.stringify(`${code}${inlineMapURLSuffix}`)
+          } else {
+            transformedSource = code;
           }
-
-          transformedSource = `${code}${inlineMapURLSuffix}`
         } catch (e) {
           console.error(`Unable to transform source code for module ${filePath}.`)
           if (e.index) {
