@@ -275,11 +275,7 @@ function generateSnapshot () {
 
       if (customRequire.definitions.hasOwnProperty(modulePath)) {
         customRequire.cache[modulePath] = module
-        const definition = customRequire.definitions[modulePath]
-        const definitionAsFunction = typeof definition === 'string'
-          ? eval(`(${customRequire.definitions[modulePath]})`)
-          : definition
-          definitionAsFunction.apply(module.exports, [module.exports, module, getFilename, getDirname, customRequire, define])
+        customRequire.definitions[modulePath].apply(module.exports, [module.exports, module, getFilename, getDirname, customRequire, define])
       } else {
         module.exports = require(modulePath)
         customRequire.cache[modulePath] = module

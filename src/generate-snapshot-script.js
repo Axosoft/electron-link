@@ -186,7 +186,7 @@ function generateSnapshotScript({ options, moduleASTs, moduleSourceMaps, withSou
     const lineCount = getLineCount(definition)
     sections.push({relativePath, startRow: sectionStartRow, endRow: (sectionStartRow + lineCount) - 2})
     const moduleDefinition = withSourceMaps
-      ? JSON.stringify(definition)
+      ? `eval(${JSON.stringify('(' + definition + ')')})`
       : definition
     definitions += `${JSON.stringify(relativePath)}: ${moduleDefinition},\n`
     sectionStartRow += lineCount
