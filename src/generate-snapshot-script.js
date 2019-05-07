@@ -178,16 +178,15 @@ function generateSnapshotScript({ options, moduleASTs, moduleSourceMaps, withSou
     const relativePath = moduleFilePaths[i]
     const source = moduleASTs[relativePath]
     const sourceMapSuffix = withSourceMaps && moduleSourceMaps[relativePath]
-      ? `\n${moduleSourceMaps[relativePath]}`
+      ? `\n${moduleSourceMaps[relativePath]}\n`
       : ''
     const resolvedSource = `${source}${sourceMapSuffix}`
-    const definition = `function (exports, module, get___filename, get___dirname, require, define) {\n${resolvedSource}\n}`
 
-    const lineCount = getLineCount(definition)
+    const lineCount = getLineCount(resolvedSource)
     sections.push({relativePath, startRow: sectionStartRow, endRow: (sectionStartRow + lineCount) - 2})
     const moduleDefinition = withSourceMaps
-      ? `eval(${JSON.stringify('(' + definition + ')')})`
-      : definition
+      ? `eval(${JSON.stringify(resolvedSource)})`
+      : resolvedSource
     definitions += `${JSON.stringify(relativePath)}: ${moduleDefinition},\n`
     sectionStartRow += lineCount
   }

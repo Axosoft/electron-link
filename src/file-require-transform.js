@@ -33,11 +33,19 @@ module.exports = class FileRequireTransform {
     this.replaceDeferredRequiresWithLazyFunctions()
     this.replaceReferencesToDeferredRequiresWithFunctionCalls()
     this.replaceReferencesToGlobalsWithFunctionCalls()
+    this.wrapWithDefinitionFunction();
     const { code, map } = recast.print(this.ast, {
       lineTerminator: '\n',
       sourceMapName: `${this.options.filePath}.map`
     })
-    return { code, map }
+
+    // A semicolon is _always_ inserted at the end of the definition. A newline _may_ be inserted.
+    // For non-source-mapped definitions, we insert them directly into the blueprint as array items.
+    // The semicolon will cause a syntax error. There is no configuration option to suppress this behavior,
+    // so instead we just trim the trailing whitespace slice off the semicolon from the output string.
+    const trimmedCode = code.trim();
+    const codeWithoutSemi = trimmedCode.slice(0, trimmedCode.length - 1)
+    return { code: codeWithoutSemi, map }
   }
 
   replaceDeferredRequiresWithLazyFunctions () {
@@ -239,6 +247,29 @@ module.exports = class FileRequireTransform {
       astPath.parent.node.type !== 'AssignmentExpression' &&
       isReference(astPath)
     )
+  }
+
+  wrapWithDefinitionFunction() {
+    const self = this
+    recast.types.visit(this.ast, {
+      visitProgram: function (astPath) {
+        const programNode = astPath.node;
+
+        const blockStatement = b.blockStatement(programNode.body)
+        blockStatement.directives = programNode.directives
+
+        const paramNames = ["exports", "module", "get___filename", "get___dirname", "require", "define"]
+        const identifiers = paramNames.map(b.identifier)
+        const functionExpression = b.functionExpression(null, identifiers, blockStatement, false)
+
+        const expressionStatement = b.expressionStatement(functionExpression)
+        const newProgramNode = b.program([expressionStatement])
+        astPath.replace(newProgramNode)
+
+        // We only need to visit a single program node; do not continue traversal afterwards
+        return false
+      }
+    })
   }
 }
 
