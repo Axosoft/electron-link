@@ -51,20 +51,20 @@ module.exports = async function (cache, options) {
           : false
 
       let source
-      let map = null
+      let inputSourceMap = null
       if(useCachedTransform) {
         source = cachedTransform.source
       } else {
         const transpiled = await options.transpile({requiredModulePath: filePath})
         source = transpiled.code || originalSource
-        map = transpiled.map
+        inputSourceMap = transpiled.map
       }
 
       let foundRequires = []
       const transform = new FileRequireTransform({
         filePath,
         source,
-        map,
+        inputSourceMap,
         extensions: options.extensions,
         baseDirPath: options.baseDirPath,
         didFindRequire: (unresolvedPath, resolvedPath, relativeModulePath) => {

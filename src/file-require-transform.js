@@ -20,6 +20,7 @@ module.exports = class FileRequireTransform {
 
   apply () {
     let source = this.options.source
+    const inputSourceMap = this.options.inputSourceMap || null
     if (this.options.filePath && path.extname(this.options.filePath) === '.json') {
       // Replace line separator and paragraph separator character (which aren't
       // supported inside javascript strings) with escape unicode sequences.
@@ -36,7 +37,8 @@ module.exports = class FileRequireTransform {
     this.wrapWithDefinitionFunction();
     const { code, map } = recast.print(this.ast, {
       lineTerminator: '\n',
-      sourceMapName: `${this.options.filePath}.map`
+      sourceMapName: `${this.options.filePath}.map`,
+      inputSourceMap
     })
 
     // A semicolon is _always_ inserted at the end of the definition. A newline _may_ be inserted.
