@@ -22,6 +22,7 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
+      (function(exports, module, get___filename, get___dirname, require, define) {
         let a;
 
         function get_a() {
@@ -33,6 +34,7 @@ suite('FileRequireTransform', () => {
           const c = {a: b, b: get_a()}
           return get_a() + b;
         }
+      })
       `
     )
   })
@@ -58,23 +60,25 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        let a, b;
-        let get_a;
-        if (condition) {
-          get_a = function() {
-            return a = a || require('a');
+      (function(exports, module, get___filename, get___dirname, require, define) {
+          let a, b;
+          let get_a;
+          if (condition) {
+            get_a = function() {
+              return a = a || require('a');
+            }
+            b = require('b')
+          } else {
+            get_a = function() {
+              return a = a || require('c');
+            }
+            b = require('d')
           }
-          b = require('b')
-        } else {
-          get_a = function() {
-            return a = a || require('c');
-          }
-          b = require('d')
-        }
 
-        function main () {
-          return get_a() + b;
-        }
+          function main () {
+            return get_a() + b;
+          }
+        })
       `
     )
   })
@@ -100,35 +104,37 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        let a;
+      (function(exports, module, get___filename, get___dirname, require, define) {
+          let a;
 
-        function get_a() {
-          return a = a || require('a');
-        }
+          function get_a() {
+            return a = a || require('a');
+          }
 
-        const b = require('b')
-        let c;
+          const b = require('b')
+          let c;
 
-        function get_c() {
-          return c = c || require('c').foo.bar;
-        }
+          function get_c() {
+            return c = c || require('c').foo.bar;
+          }
 
-        let d;
+          let d;
 
-        function get_d() {
-          return d = d || get_c().X | get_c().Y | get_c().Z;
-        }
+          function get_d() {
+            return d = d || get_c().X | get_c().Y | get_c().Z;
+          }
 
-        var e
-        function get_e() {
-          return e = e || get_c().e;
-        };
-        const f = b.f
-        function main () {
-          get_c().qux()
-          get_console().log(get_d())
-          get_e()()
-        }
+          var e
+          function get_e() {
+            return e = e || get_c().e;
+          };
+          const f = b.f
+          function main () {
+            get_c().qux()
+            get_console().log(get_d())
+            get_e()()
+          }
+        })
       `
     )
   })
@@ -180,38 +186,40 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        (function () {
-          let a;
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          (function () {
+            let a;
 
-          function get_a() {
-            return a = a || require('a');
-          }
+            function get_a() {
+              return a = a || require('a');
+            }
 
-          const b = require('b')
-          function main () {
-            return get_a() + b;
-          }
-        }).call(this)
+            const b = require('b')
+            function main () {
+              return get_a() + b;
+            }
+          }).call(this)
 
-        (function () {
-          let a;
+          (function () {
+            let a;
 
-          function get_a() {
-            return a = a || require('a');
-          }
+            function get_a() {
+              return a = a || require('a');
+            }
 
-          const b = require('b')
-          function main () {
-            return get_a() + b;
-          }
-        })()
+            const b = require('b')
+            function main () {
+              return get_a() + b;
+            }
+          })()
 
-        foo(function () {
-          const b = require('b')
-          const c = require('c')
-          function main () {
-            return b + c
-          }
+          foo(function () {
+            const b = require('b')
+            const c = require('c')
+            function main () {
+              return b + c
+            }
+          })
         })
       `
     )
@@ -242,27 +250,29 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        let a;
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          let a;
 
-        function get_a() {
-          return a = a || require('a');
-        }
-
-        function outer () {
-          get_console().log(a)
-          function inner () {
-            get_console().log(a)
+          function get_a() {
+            return a = a || require('a');
           }
-          let a = []
-        }
 
-        function other () {
-          get_console().log(get_a())
-          function inner () {
+          function outer () {
+            get_console().log(a)
+            function inner () {
+              get_console().log(a)
+            }
             let a = []
-            get_console().log(a)
           }
-        }
+
+          function other () {
+            get_console().log(get_a())
+            function inner () {
+              let a = []
+              get_console().log(a)
+            }
+          }
+        })
       `
     )
   })
@@ -288,18 +298,20 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        get_global().a = 1
-        get_process().b = 2
-        get_window().c = 3
-        get_document().d = 4
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          get_global().a = 1
+          get_process().b = 2
+          get_window().c = 3
+          get_document().d = 4
 
-        function inner () {
-          const window = {}
-          get_global().e = 4
-          get_process().f = 5
-          window.g = 6
-          get_document().h = 7
-        }
+          function inner () {
+            const window = {}
+            get_global().e = 4
+            get_process().f = 5
+            window.g = 6
+            get_document().h = 7
+          }
+        })
       `
     )
   })
@@ -316,20 +328,22 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        let a, b, c, d, e, f;
-        a = 1, b = 2, c = 3;
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          let a, b, c, d, e, f;
+          a = 1, b = 2, c = 3;
 
-        function get_d() {
-          return d = d || require("d");
-        }
+          function get_d() {
+            return d = d || require("d");
+          }
 
-        function get_e() {
-          return e = e || get_d().e;
-        }
+          function get_e() {
+            return e = e || get_d().e;
+          }
 
-        function get_f() {
-          return f = f || get_e().f;
-        }
+          function get_f() {
+            return f = f || get_e().f;
+          }
+        })
       `
     )
   })
@@ -348,23 +362,25 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        let {a, b, c} = {};
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          let {a, b, c} = {};
 
-        function get_a() {
-          return a = a || require('module').foo.a;
-        }
+          function get_a() {
+            return a = a || require('module').foo.a;
+          }
 
-        function get_b() {
-          return b = b || require('module').foo.b;
-        }
+          function get_b() {
+            return b = b || require('module').foo.b;
+          }
 
-        function get_c() {
-          return c = c || require('module').foo.c;
-        }
+          function get_c() {
+            return c = c || require('module').foo.c;
+          }
 
-        function main() {
-          get_a().bar()
-        }
+          function main() {
+            get_a().bar()
+          }
+        })
       `
     )
   })
@@ -383,23 +399,25 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        let {a: A, b, c} = {};
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          let {a: A, b, c} = {};
 
-        function get_A() {
-          return A = A || require('module').a;
-        }
+          function get_A() {
+            return A = A || require('module').a;
+          }
 
-        function get_b() {
-          return b = b || require('module').b;
-        }
+          function get_b() {
+            return b = b || require('module').b;
+          }
 
-        function get_c() {
-          return c = c || require('module').c;
-        }
+          function get_c() {
+            return c = c || require('module').c;
+          }
 
-        function main() {
-          get_A().bar()
-        }
+          function main() {
+            get_A().bar()
+          }
+        })
       `
     )
   })
@@ -413,7 +431,9 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        module.exports = {"a": 1, "b": 2}
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          module.exports = {"a": 1, "b": 2}
+        })
       `
     )
   })
@@ -445,36 +465,38 @@ suite('FileRequireTransform', () => {
     assert.equal(
       actual,
       dedent`
-        let a;
+        (function(exports, module, get___filename, get___dirname, require, define) {
+          let a;
 
-        function get_a() {
-          return a = a || require("a/index.js");
-        }
+          function get_a() {
+            return a = a || require("a/index.js");
+          }
 
-        let b;
+          let b;
 
-        function get_b() {
-          return b = b || require("./dir/subdir/b.js");
-        }
+          function get_b() {
+            return b = b || require("./dir/subdir/b.js");
+          }
 
-        let c;
+          let c;
 
-        function get_c() {
-          return c = c || require('c');
-        }
+          function get_c() {
+            return c = c || require('c');
+          }
 
-        let fs;
+          let fs;
 
-        function get_fs() {
-          return fs = fs || require('fs');
-        }
+          function get_fs() {
+            return fs = fs || require('fs');
+          }
 
-        function inner () {
-          require("./dir/subdir/b.js")
-          require.resolve("a/index.js")
-          require.resolve('d')
-          require('d')
-        }
+          function inner () {
+            require("./dir/subdir/b.js")
+            require.resolve("a/index.js")
+            require.resolve('d')
+            require('d')
+          }
+        })
       `
     )
     assert.deepEqual(requiredModules, [
