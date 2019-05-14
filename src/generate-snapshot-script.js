@@ -42,12 +42,14 @@ module.exports = async function (cache, options) {
         })
       })
 
+      const requiresAreResolved = r => (resolveModulePath({ filePath, extensions: options.extensions, moduleName: r.unresolvedPath }) || r.unresolvedPath) === r.resolvedPath
+
       const cachedTransform = await cache.get({filePath, content: originalSource})
+      const sourceMapsShouldBeFlushed = options.withSourceMaps && cachedTransform && cachedTransform.map === null
+
       const useCachedTransform =
         cachedTransform
-          ? cachedTransform.requires.every(
-            r => (resolveModulePath({ filePath, extensions: options.extensions, moduleName: r.unresolvedPath }) || r.unresolvedPath) === r.resolvedPath
-          )
+          ? cachedTransform.requires.every(requiresAreResolved) && !sourceMapsShouldBeFlushed
           : false
 
       let source
@@ -77,7 +79,7 @@ module.exports = async function (cache, options) {
         }
       })
 
-      let transformedSource, requires, transformedMap
+      let transformedSource, transformedMap
       if (useCachedTransform) {
         transformedSource = cachedTransform.source
         foundRequires = cachedTransform.requires

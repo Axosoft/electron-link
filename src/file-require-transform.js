@@ -20,6 +20,9 @@ module.exports = class FileRequireTransform {
 
   apply () {
     let source = this.options.source
+    const sourceMapName = this.options.withSourceMaps
+      ? `${this.options.filePath}`
+      : null
     const inputSourceMap = this.options.inputSourceMap || null
     if (this.options.filePath && path.extname(this.options.filePath) === '.json') {
       // Replace line separator and paragraph separator character (which aren't
@@ -37,7 +40,7 @@ module.exports = class FileRequireTransform {
     this.wrapWithDefinitionFunction();
     const { code, map } = recast.print(this.ast, {
       lineTerminator: '\n',
-      sourceMapName: `${this.options.filePath}.map`,
+      sourceMapName,
       inputSourceMap
     })
 
@@ -47,7 +50,7 @@ module.exports = class FileRequireTransform {
     // so instead we just trim the trailing whitespace slice off the semicolon from the output string.
     const trimmedCode = code.trim();
     const codeWithoutSemi = trimmedCode.slice(0, trimmedCode.length - 1)
-    return { code: codeWithoutSemi, map }
+    return { code: codeWithoutSemi, map: map || null }
   }
 
   replaceDeferredRequiresWithLazyFunctions () {
