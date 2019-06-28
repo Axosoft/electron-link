@@ -46,7 +46,7 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
         path.resolve(baseDirPath, '../fixtures/module-1/dir/c.json'),
         path.resolve(baseDirPath, '../fixtures/module-1/node_modules/a/index.js')
       ])
-      assert.equal((await cache._allKeys()).size, 13)
+      assert.equal((await cache._allKeys()).size, 4)
       await cache.dispose()
     }
 
@@ -72,7 +72,7 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
       assert.deepEqual(Array.from(includedFilePaths), [
         path.resolve(baseDirPath, '../fixtures/module-1/index.js')
       ])
-      assert.equal((await cache._allKeys()).size, 4)
+      assert.equal((await cache._allKeys()).size, 1)
       await cache.dispose()
     }
 
@@ -94,7 +94,7 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
         path.resolve(baseDirPath, '../fixtures/module-1/dir/c.json'),
         path.resolve(baseDirPath, '../fixtures/module-1/node_modules/a/index.js')
       ])
-      assert.equal((await cache._allKeys()).size, 13)
+      assert.equal((await cache._allKeys()).size, 4)
       await cache.dispose()
     }
 
@@ -246,7 +246,7 @@ suite('generateSnapshotScript({baseDirPath, mainPath})', () => {
       path.resolve(baseDirPath, '../fixtures/module-1/dir/c.json'),
       path.resolve(baseDirPath, '../fixtures/module-1/node_modules/a/index.js')
     ])
-    assert.equal((await cache._allKeys()).size, 16)
+    assert.equal((await cache._allKeys()).size, 5)
     await cache.dispose()
   })
 
