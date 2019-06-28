@@ -32,15 +32,18 @@ module.exports = async function (cache, options) {
     }
 
     if (!moduleASTs[relativeFilePath]) {
-      let originalSource = await new Promise((resolve, reject) => {
-        fs.readFile(filePath, 'utf8', (err, data) => {
-          if (err) {
-            reject(err)
-          } else {
-            resolve(data)
-          }
+      let originalSource = null
+      if (!options.forceUseCache) {
+        originalSource = await new Promise((resolve, reject) => {
+          fs.readFile(filePath, 'utf8', (err, data) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve(data)
+            }
+          })
         })
-      })
+      }
 
       const requiresAreResolved = r => (resolveModulePath({ filePath, extensions: options.extensions, moduleName: r.unresolvedPath }) || r.unresolvedPath) === r.resolvedPath
 
@@ -51,6 +54,11 @@ module.exports = async function (cache, options) {
         cachedTransform
           ? cachedTransform.requires.every(requiresAreResolved) && !sourceMapsShouldBeFlushed
           : false
+
+      if (!useCachedTransform && options.forceUseCache) {
+        console.error(`Unable to use cache for ${filePath}.`);
+        throw new Error(`Unable to use cache for ${filePath}.`);
+      }
 
       let source
       let inputSourceMap = null
