@@ -1,5 +1,6 @@
 const TransformCache = require('./transform-cache')
 const generateSnapshotScript = require('./generate-snapshot-script')
+const createWatcher = require('./watch');
 
 async function initializeCache(options) {
   const cacheInvalidationKey = options.shouldExcludeModule.toString() + require('../package.json').version
@@ -20,4 +21,9 @@ module.exports = async function (options) {
       await cache.dispose()
     }
   }
+}
+
+module.exports.createWatcher = async function(options) {
+  const cache = await initializeCache(options)
+  return await createWatcher(cache, options);
 }
