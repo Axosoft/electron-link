@@ -1,13 +1,23 @@
 const TransformCache = require('./transform-cache')
 const generateSnapshotScript = require('./generate-snapshot-script')
 
-module.exports = async function (options) {
+async function initializeCache(options) {
   const cacheInvalidationKey = options.shouldExcludeModule.toString() + require('../package.json').version
   const cache = new TransformCache(options.cachePath, cacheInvalidationKey)
   await cache.loadOrCreate()
-  delete options.cachePath
+  return cache
+}
 
-  const result = await generateSnapshotScript(cache, options)
-  await cache.dispose()
-  return result
+module.exports = async function (options) {
+  let cache = null;
+  try {
+    cache = await initializeCache(options)
+    delete options.cachePath
+    const result = await generateSnapshotScript(cache, options)
+    return result
+  } finally {
+    if (cache) {
+      await cache.dispose()
+    }
+  }
 }
