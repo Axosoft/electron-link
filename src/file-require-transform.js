@@ -1,8 +1,8 @@
 const assert = require('assert')
 const path = require('path')
-const recast = require('recast')
+const recast = require('@axosoft/recast')
 const b = recast.types.builders
-const t = require('babel-types')
+const t = require('@babel/types')
 const resolveModulePath = require('./resolve-module-path');
 
 const GLOBALS = new Set(['global', 'window', 'process', 'document', 'console', '__dirname', '__filename'])
@@ -30,7 +30,7 @@ module.exports = class FileRequireTransform {
       source = "module.exports = " + source.replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
     }
     this.ast = recast.parse(source, {
-      parser: require("recast/parsers/babel"),
+      parser: require("@axosoft/recast/parsers/babel"),
       sourceFileName: this.options.filePath
     })
     this.lazyRequireFunctionsByVariableName = new Map()
@@ -344,10 +344,11 @@ function isReference (astPath) {
     return false
   }
 
+
   const parent = astPath.parent.value
   if (t.isVariableDeclarator(parent)) {
     return parent.init === node
-  } else if (t.isMemberExpression(parent)) {
+  } else if (t.isMemberExpression(parent) || t.isOptionalMemberExpression(parent)) {
     return parent.object === node || (parent.computed && parent.property === node)
   } else if (t.isFunction(parent)) {
     return parent.id !== node && !parent.params.some(param => param === node)

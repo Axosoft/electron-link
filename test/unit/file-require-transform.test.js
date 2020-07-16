@@ -3,7 +3,7 @@
 const assert = require('assert')
 const dedent = require('dedent')
 const path = require('path')
-const recast = require('recast')
+const recast = require('@axosoft/recast')
 const FileRequireTransform = require('../../src/file-require-transform')
 
 suite('FileRequireTransform', () => {
@@ -51,7 +51,14 @@ suite('FileRequireTransform', () => {
       }
 
       function main () {
-        return a + b
+        try {
+          let c = a ?? true;
+          let d = a?.test;
+          let e = b?.test;
+          return a + b
+        } catch {
+          throw new Error();
+        }
       }
     `
 
@@ -76,7 +83,14 @@ suite('FileRequireTransform', () => {
           }
 
           function main () {
-            return get_a() + b;
+            try {
+              let c = get_a() ?? true;
+              let d = get_a()?.test;
+              let e = b?.test;
+              return get_a() + b;
+            } catch {
+              throw new Error();
+            }
           }
         })
       `
