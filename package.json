@@ -9,6 +9,9 @@
   },
   "author": "",
   "license": "MIT",
+  "files": [
+    "src"
+  ],
   "devDependencies": {
     "dedent": "^0.6.0",
     "electron": "1.7.10",
