@@ -1,6 +1,6 @@
 {
   "name": "@axosoft/electron-link",
-  "version": "0.4.4-alpha.9",
+  "version": "0.4.4-alpha.10",
   "description": "Generates scripts to pass to V8's `mksnapshot` tool.",
   "main": "src/index.js",
   "scripts": {
